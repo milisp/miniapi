@@ -1,0 +1,11 @@
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.10.1  # Replace with the latest version
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]  # Optional, adjusts the style (e.g., compatible with black)
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.289  # Replace with the latest version
+    hooks:
+      - id: ruff

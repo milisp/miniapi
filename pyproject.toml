@@ -1,0 +1,25 @@
+[project]
+name = "miniapi"
+version = "0.1.0"
+description = "miniapi like fastapi"
+authors = [
+    {name = "milisp", email = "milisp@proton.me"},
+]
+optional-dependencies = {websockets = ["websockets>=10.0"], uvicorn = ["uvicorn>=0.22.0"]}
+requires-python = "==3.10.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "sqlalchemy>=2.0.36",
+    "pytest>=8.3.3",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.ruff]
+line-length = 120

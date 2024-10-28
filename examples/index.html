@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Data Example</title>
+</head>
+<body>
+    <div id="userList"></div>
+
+    <script>
+        fetch('http://127.0.0.1:8000/users')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+            document.getElementById('userList').textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('userList').textContent = 'Error: ' + error.message;
+        });
+    </script>
+</body>
+</html>
