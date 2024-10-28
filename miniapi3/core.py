@@ -1,9 +1,10 @@
 import asyncio
 import inspect
+import json
 import re
 from dataclasses import dataclass
-from typing import Callable, Dict, Optional, Type
-from urllib.parse import parse_qs, urlparse
+from typing import Callable, Dict, Optional
+from urllib.parse import parse_qs
 
 from .http import Request, Response
 from .validation import ValidationError
@@ -43,22 +44,6 @@ class MiniAPI:
         def decorator(handler):
             self.websocket_handlers[path] = handler
             return handler
-
-        return decorator
-
-    def validate(self, validator: Type):
-        """Request validation decorator"""
-
-        def decorator(handler):
-            async def wrapper(request: Request) -> Response:
-                try:
-                    data = await request.json()
-                    validated_data = validator().validate(data)
-                    return await handler(request, validated_data)
-                except ValidationError as e:
-                    return Response({"error": str(e)}, status=400)
-
-            return wrapper
 
         return decorator
 
@@ -180,18 +165,26 @@ class MiniAPI:
             # Route request
             elif route_path and method in self.routes[route_path]:
                 handler = self.routes[route_path][method]
-                # Check if handler is async
-                if inspect.iscoroutinefunction(handler):
-                    response = (
-                        await handler(request) if len(inspect.signature(handler).parameters) > 0 else await handler()
-                    )
-                else:
-                    # Handle synchronous functions without await
-                    response = handler(request) if len(inspect.signature(handler).parameters) > 0 else handler()
+                try:
+                    params = await self._resolve_params(handler, request)
+                    if self.debug:
+                        print(f"Handler params resolved: {params}")
 
-                # Handle direct returns
-                if isinstance(response, (dict, str)):
-                    response = Response(response)
+                    response = await handler(**params) if inspect.iscoroutinefunction(handler) else handler(**params)
+
+                    if isinstance(response, (dict, str)):
+                        response = Response(response)
+                except ValidationError as e:
+                    if self.debug:
+                        print(f"Validation error: {str(e)}")
+                    response = Response({"error": str(e)}, status=400)
+                except Exception as e:
+                    if self.debug:
+                        print(f"Handler error: {str(e)}")
+                        import traceback
+
+                        traceback.print_exc()
+                    response = Response({"error": str(e)}, status=500)
             else:
                 response = Response({"error": "Not Found"}, 404)
 
@@ -248,9 +241,17 @@ class MiniAPI:
 
     async def _handle_asgi_http(self, scope: dict, receive: Callable, send: Callable) -> None:
         # Parse path and query from scope
-        url_info = urlparse(scope["path"])
-        path = url_info.path
-        query_params = parse_qs(url_info.query)
+        # url_info = urlparse(scope.get("query_string", b"").decode())
+        path = scope["path"]
+        # Convert query string to dictionary properly
+        query_params = {}
+        raw_query = scope.get("query_string", b"").decode()
+        if raw_query:
+            query_dict = parse_qs(raw_query)
+            # Convert bytes to str if needed
+            query_params = {
+                k: [v.decode() if isinstance(v, bytes) else v for v in vals] for k, vals in query_dict.items()
+            }
 
         # Get headers from scope
         headers = {k.decode(): v.decode() for k, v in scope["headers"]}
@@ -289,22 +290,26 @@ class MiniAPI:
 
             elif route_path and scope["method"] in self.routes[route_path]:
                 handler = self.routes[route_path][scope["method"]]
-                if inspect.iscoroutinefunction(handler):
-                    if len(inspect.signature(handler).parameters) > 0:
-                        result = await handler(request)
-                    else:
-                        result = await handler()
-                else:
-                    if len(inspect.signature(handler).parameters) > 0:
-                        result = handler(request)
-                    else:
-                        result = handler()
+                try:
+                    params = await self._resolve_params(handler, request)
+                    if self.debug:
+                        print(f"Handler params resolved: {params}")
 
-                # Convert result to Response object
-                if isinstance(result, Response):
-                    response = result
-                else:
-                    response = Response(result)
+                    response = await handler(**params) if inspect.iscoroutinefunction(handler) else handler(**params)
+
+                    if isinstance(response, (dict, str)):
+                        response = Response(response)
+                except ValidationError as e:
+                    if self.debug:
+                        print(f"Validation error: {str(e)}")
+                    response = Response({"error": str(e)}, status=400)
+                except Exception as e:
+                    if self.debug:
+                        print(f"Handler error: {str(e)}")
+                        import traceback
+
+                        traceback.print_exc()
+                    response = Response({"error": str(e)}, status=500)
             else:
                 response = Response({"error": "Not Found"}, 404)
 
@@ -329,6 +334,11 @@ class MiniAPI:
             await send({"type": "http.response.body", "body": response_bytes})
 
         except Exception as e:
+            if self.debug:
+                print(f"ASGI handler error: {str(e)}")
+                import traceback
+
+                traceback.print_exc()
             error_response = Response({"error": str(e)}, 500)
             error_bytes = error_response.to_bytes()
             await send(
@@ -363,3 +373,72 @@ class MiniAPI:
         print(f"Server running on http://{host}:{port}")
         async with server:
             await server.serve_forever()
+
+    async def _resolve_params(self, handler, request: Request):
+        sig = inspect.signature(handler)
+        params = {}
+
+        try:
+            if self.debug:
+                print(f"Handler parameters: {sig.parameters}")
+                print(f"Request body: {await request.text()}")
+                print(f"Query params: {request.query_params}")
+
+            for name, param in sig.parameters.items():
+                annotation = param.annotation
+
+                if self.debug:
+                    print(f"Processing parameter {name} with annotation {annotation}")
+
+                # Handle path parameters
+                if name in request.path_params:
+                    value = request.path_params[name]
+                    if annotation != inspect.Parameter.empty:
+                        try:
+                            value = annotation(value)
+                        except ValueError as e:
+                            raise ValidationError(f"Invalid type for parameter {name}: {str(e)}")
+                    params[name] = value
+                    continue
+
+                # Handle query parameters
+                if name in request.query_params:
+                    value = request.query_params[name][0]  # Get first value
+                    if annotation != inspect.Parameter.empty:
+                        try:
+                            value = annotation(value)
+                        except ValueError as e:
+                            raise ValidationError(f"Invalid type for parameter {name}: {str(e)}")
+                    params[name] = value
+                    continue
+
+                # Handle request object injection
+                if annotation == Request:
+                    params[name] = request
+                    continue
+
+                # Handle Pydantic models
+                if hasattr(annotation, "model_validate"):
+                    try:
+                        if not hasattr(request, "_cached_json"):
+                            request._cached_json = await request.json()
+                        data = request._cached_json
+                        params[name] = annotation.model_validate(data)
+                        continue
+                    except json.JSONDecodeError:
+                        raise ValidationError("Invalid JSON data")
+                    except Exception as e:
+                        raise ValidationError(f"Validation error for {name}: {str(e)}")
+
+                # If parameter is required but not found, raise an error
+                if param.default == inspect.Parameter.empty:
+                    raise ValidationError(f"Missing required parameter: {name}")
+
+            if self.debug:
+                print(f"Final resolved params: {params}")
+
+            return params
+        except Exception as e:
+            if self.debug:
+                print(f"Error in _resolve_params: {str(e)}")
+            raise

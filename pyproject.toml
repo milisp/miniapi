@@ -5,8 +5,12 @@ description = "miniapi like fastapi"
 authors = [
     {name = "milisp", email = "milisp@proton.me"},
 ]
-optional-dependencies = {websockets = ["websockets>=10.0"], uvicorn = ["uvicorn>=0.22.0"]}
-requires-python = "==3.10.*"
+[project.optional-dependencies]
+websockets = ["websockets>=10.0"]
+uvicorn = ["uvicorn>=0.22.0"]
+pydantic = ["pydantic>=2.0.0"]
+
+requires-python = ">=3.9"
 readme = "README.md"
 license = {text = "MIT"}
 

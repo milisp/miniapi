@@ -22,18 +22,14 @@ class Request:
         self.path_params = path_params or {}
 
     async def json(self) -> dict:
-        print("json", self.body)
         return json.loads(self.body.decode())
 
     async def text(self) -> str:
-        print("text", self.body)
         return self.body.decode()
 
     async def form(self) -> dict:
         """Parse form data from request body"""
-        print("form", self.body)
         content_type = self.headers.get("Content-Type", "").lower()
-        print("content", content_type)
 
         # Handle URL-encoded form data
         if "application/x-www-form-urlencoded" in content_type:

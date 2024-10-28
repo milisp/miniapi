@@ -54,22 +54,37 @@ async def create_user(request: Request, session=Session()):
         session.close()
 
 
-@app.get("/users/{user_id}")
-async def get_user(request):
-    user_id = request.path_params["user_id"]
-    return {"user_id": user_id}
-
-
 @app.put("/users/{user_id}")
-async def update_user(request):
-    user_id = request.path_params["user_id"]
-    return {"user_id": user_id}
+async def update_user(request: Request, user_id: int):
+    session = Session()
+    try:
+        data = await request.json()
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            return Response({"message": "User not found"}, status=404)
+
+        for key, value in data.items():
+            setattr(user, key, value)
+
+        session.commit()
+        return {"message": "User updated"}
+    finally:
+        session.close()
 
 
 @app.delete("/users/{user_id}")
-async def delete_user(request):
-    user_id = request.path_params["user_id"]
-    return Response({"message": f"User deleted {user_id}"}, status=204)
+async def delete_user(user_id: int):
+    session = Session()
+    try:
+        user = session.query(User).filter(User.id == user_id).first()
+        if not user:
+            return Response({"message": "User not found"}, status=404)
+
+        session.delete(user)
+        session.commit()
+        return {"message": "User deleted"}
+    finally:
+        session.close()
 
 
 @app.websocket("/ws")
@@ -77,6 +92,32 @@ async def websocket_handler(ws):
     while True:
         message = await ws.receive()
         await ws.send(f"Echo: {message}")
+
+
+@app.get("/api")
+async def get_user_query(username: str, age: int):
+    return {"message": f"Query user {username}", "age": age}
+
+
+@app.get("/users/search")
+async def get_users_by_params(request: Request):
+    session = Session()
+    try:
+        params = request.query_params
+        query = session.query(User)
+
+        if "name" in params:
+            query = query.filter(User.name == params["name"][0])
+        if "age" in params:
+            query = query.filter(User.age == int(params["age"][0]))  # Fixed to use age parameter
+        if "email" in params:
+            query = query.filter(User.email == params["email"][0])
+
+        users = query.all()
+        result = [{"id": u.id, "name": u.name, "age": u.age, "email": u.email} for u in users]
+        return {"data": result}
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":
