@@ -1,4 +1,4 @@
-from miniapi import CORSMiddleware, MiniAPI, Request
+from miniapi3 import CORSMiddleware, MiniAPI, Request
 
 app = MiniAPI()
 app.add_middleware(CORSMiddleware(allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]))

@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from miniapi.websocket import WebSocketConnection
+from miniapi3.websocket import WebSocketConnection
 
 
 @pytest.fixture

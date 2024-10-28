@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from miniapi import MiniAPI, Request, Response
+from miniapi3 import MiniAPI, Request, Response
 
 
 @pytest.fixture

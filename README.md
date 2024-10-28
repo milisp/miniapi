@@ -16,17 +16,17 @@ A lightweight Python web framework inspired by FastAPI, featuring async support,
 ## Installation
 
 ```bash
-pip install miniapi
+pip install miniapi3
 ```
 
 For WebSocket support:
 ```bash
-pip install miniapi[websockets]
+pip install miniapi3[websockets]
 ```
 
 ## Quick Start
 ```python
-from miniapi import MiniAPI, Response
+from miniapi3 import MiniAPI, Response
 
 app = MiniAPI()
 
@@ -56,8 +56,8 @@ if __name__ == "__main__":
 ```python
 from dataclasses import dataclass
 
-from miniapi.validation import RequestValidator, ValidationError
-from miniapi import MiniAPI, Response
+from miniapi3.validation import RequestValidator, ValidationError
+from miniapi3 import MiniAPI, Response
 
 app = MiniAPI()
 
@@ -77,7 +77,7 @@ async def create_user(request, data: UserCreate):
 ## CORS Middleware
 
 ```python
-from miniapi import MiniAPI, CORSMiddleware
+from miniapi3 import MiniAPI, CORSMiddleware
 
 app = MiniAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"])
@@ -87,7 +87,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"])
 ## HTML Response
 
 ```python
-from miniapi import MiniAPI, html
+from miniapi3 import MiniAPI, html
 
 app = MiniAPI()
 

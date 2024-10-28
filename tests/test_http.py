@@ -1,4 +1,4 @@
-from miniapi import Request, Response
+from miniapi3 import Request, Response
 
 
 async def test_request_json():

@@ -1,6 +1,6 @@
 import pytest
 
-from miniapi import RequestValidator, ValidationError
+from miniapi3 import RequestValidator, ValidationError
 
 
 class UserValidator(RequestValidator):

@@ -4,7 +4,7 @@ __author__ = ["ClaudeAI", "milisp"]
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from miniapi import CORSMiddleware, MiniAPI, Request, Response
+from miniapi3 import CORSMiddleware, MiniAPI, Request, Response
 
 app = MiniAPI()
 app.add_middleware(CORSMiddleware(allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]))

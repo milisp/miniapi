@@ -1,4 +1,4 @@
-from miniapi import CORSMiddleware, Request, Response
+from miniapi3 import CORSMiddleware, Request, Response
 
 
 def test_cors_middleware():

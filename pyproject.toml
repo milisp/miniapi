@@ -1,5 +1,5 @@
 [project]
-name = "miniapi"
+name = "miniapi3"
 version = "0.1.0"
 description = "miniapi like fastapi"
 authors = [
