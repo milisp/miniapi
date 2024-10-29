@@ -1,97 +1,45 @@
 import asyncio
 import inspect
 import json
-import re
-from dataclasses import dataclass
-from typing import Callable, Dict, Optional
+from typing import Callable
 from urllib.parse import parse_qs
 
 from .http import Request, Response
+from .router import Router
 from .validation import ValidationError
 from .websocket import WebSocketConnection
 
 
-@dataclass
-class URLPattern:
-    path: str
-    pattern: re.Pattern
-    param_names: list[str]
-
-
 class MiniAPI:
     def __init__(self):
-        self.routes: Dict[str, Dict[str, Callable]] = {}
-        self.url_patterns: Dict[str, URLPattern] = {}
-        self.websocket_handlers: Dict[str, Callable] = {}
+        self.router = Router()
         self.middleware = []
         self.debug = False
 
     def get(self, path: str):
-        return self._route(path, ["GET"])
+        return self.router.get(path)
 
     def post(self, path: str):
-        return self._route(path, ["POST"])
+        return self.router.post(path)
 
     def put(self, path: str):
-        return self._route(path, ["PUT"])
+        return self.router.put(path)
 
     def delete(self, path: str):
-        return self._route(path, ["DELETE"])
+        return self.router.delete(path)
 
     def websocket(self, path: str):
-        """WebSocket route decorator"""
-
-        def decorator(handler):
-            self.websocket_handlers[path] = handler
-            return handler
-
-        return decorator
+        return self.router.websocket(path)
 
     def add_middleware(self, middleware):
         """添加中间件"""
         self.middleware.append(middleware)
 
-    def _route(self, path: str, methods: list):
-        """Internal route registration with URL pattern support"""
-        # 检查是否包含URL数
-        param_pattern = r"{([^{}]+)}"
-        param_names = re.findall(param_pattern, path)
-        if param_names:
-            # 将URL参数转换为正则表达式
-            regex_path = re.sub(param_pattern, r"([^/]+)", path)
-            pattern = re.compile(f"^{regex_path}$")
-            self.url_patterns[path] = URLPattern(path, pattern, param_names)
-
-        def decorator(handler):
-            if path not in self.routes:
-                self.routes[path] = {}
-            for method in methods:
-                self.routes[path][method.upper()] = handler
-            return handler
-
-        return decorator
-
-    def _match_route(self, path: str) -> tuple[Optional[str], Optional[dict]]:
-        """Match URL pattern and extract parameters"""
-        # 首先检查精确匹配
-        if path in self.routes:
-            return path, {}
-
-        # 然后检查模式匹配
-        for url_pattern in self.url_patterns.values():
-            match = url_pattern.pattern.match(path)
-            if match:
-                params = dict(zip(url_pattern.param_names, match.groups()))
-                return url_pattern.path, params
-
-        return None, None
-
     async def _handle_websocket(self, websocket, path):
         """Handle WebSocket connections"""
-        if path in self.websocket_handlers:
-            handler = self.websocket_handlers[path]
+        if path in self.router.websocket_handlers:
+            handler = self.router.websocket_handlers[path]
             conn = WebSocketConnection(websocket)
-            # Check if handler accepts connection parameter
             if len(inspect.signature(handler).parameters) > 0:
                 await handler(conn)
             else:
@@ -123,7 +71,7 @@ class MiniAPI:
 
             # Check if this is a WebSocket upgrade request
             if headers.get("Upgrade", "").lower() == "websocket":
-                if path in self.websocket_handlers:
+                if path in self.router.websocket_handlers:
                     try:
                         import websockets
                     except ImportError:
@@ -139,7 +87,7 @@ class MiniAPI:
             body = await reader.read(content_length) if content_length else b""
 
             # Match route and extract parameters
-            route_path, path_params = self._match_route(path)
+            route_path, path_params = self.router._match_route(path)
 
             # Create request object
             request = Request(method, path, headers, query_params, body, path_params)
@@ -163,8 +111,8 @@ class MiniAPI:
                 return  # 直接返回，不继续处理
 
             # Route request
-            elif route_path and method in self.routes[route_path]:
-                handler = self.routes[route_path][method]
+            elif route_path and method in self.router.routes[route_path]:
+                handler = self.router.routes[route_path][method]
                 try:
                     params = await self._resolve_params(handler, request)
                     if self.debug:
@@ -265,7 +213,7 @@ class MiniAPI:
             more_body = message.get("more_body", False)
 
         # Create request object
-        route_path, path_params = self._match_route(path)
+        route_path, path_params = self.router._match_route(path)
         request = Request(scope["method"], path, headers, query_params, body, path_params)
 
         try:
@@ -288,8 +236,8 @@ class MiniAPI:
                 await send({"type": "http.response.body", "body": b""})
                 return
 
-            elif route_path and scope["method"] in self.routes[route_path]:
-                handler = self.routes[route_path][scope["method"]]
+            elif route_path and scope["method"] in self.router.routes[route_path]:
+                handler = self.router.routes[route_path][scope["method"]]
                 try:
                     params = await self._resolve_params(handler, request)
                     if self.debug:
@@ -352,10 +300,10 @@ class MiniAPI:
 
     async def _handle_asgi_websocket(self, scope: dict, receive: Callable, send: Callable) -> None:
         path = scope["path"]
-        if path not in self.websocket_handlers:
+        if path not in self.router.websocket_handlers:
             return
 
-        handler = self.websocket_handlers[path]
+        handler = self.router.websocket_handlers[path]
         websocket = WebSocketConnection({"receive": receive, "send": send})
 
         await send({"type": "websocket.accept"})

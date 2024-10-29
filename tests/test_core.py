@@ -17,8 +17,8 @@ async def test_basic_routing(app):
 
     request = Request(method="GET", path="/hello", headers={}, query_params={}, body=b"")
 
-    route_path, params = app._match_route("/hello")
-    handler = app.routes[route_path]["GET"]
+    route_path, params = app.router._match_route("/hello")
+    handler = app.router.routes[route_path]["GET"]
     result = await handler(request)
 
     # Convert dict to Response if needed
@@ -34,7 +34,7 @@ async def test_path_parameters(app):
     async def get_user(request):
         return {"user_id": request.path_params["user_id"]}
 
-    route_path, params = app._match_route("/users/123")
+    route_path, params = app.router._match_route("/users/123")
     assert route_path == "/users/{user_id}"
     assert params == {"user_id": "123"}
 
@@ -46,8 +46,8 @@ async def test_query_parameters(app):
 
     request = Request(method="GET", path="/search", headers={}, query_params={"q": "test"}, body=b"")
 
-    route_path, _ = app._match_route("/search")
-    handler = app.routes[route_path]["GET"]
+    route_path, _ = app.router._match_route("/search")
+    handler = app.router.routes[route_path]["GET"]
     result = await handler(request)
 
     # Convert dict to Response if needed
