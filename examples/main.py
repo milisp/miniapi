@@ -26,6 +26,7 @@ engine = create_engine("sqlite:///db.sqlite")
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
+
 class UserCreate(BaseModel):
     name: str
     age: int
