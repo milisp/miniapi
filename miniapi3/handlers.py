@@ -1,6 +1,6 @@
 import asyncio
 import inspect
-from typing import TYPE_CHECK, Callable
+from typing import TYPE_CHECKING, Callable
 from urllib.parse import parse_qs
 
 from .http import Request, Response
@@ -8,7 +8,7 @@ from .parameter_resolver import ParameterResolver
 from .validation import ValidationError
 from .websocket import WebSocketConnection
 
-if TYPE_CHECK:
+if TYPE_CHECKING:
     from .core import app
 
 class RequestHandler:
