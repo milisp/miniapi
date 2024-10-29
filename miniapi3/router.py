@@ -9,6 +9,7 @@ class URLPattern:
     pattern: re.Pattern
     param_names: list[str]
 
+
 class Router:
     def __init__(self):
         self.routes: Dict[str, Dict[str, Callable]] = {}
@@ -29,9 +30,11 @@ class Router:
 
     def websocket(self, path: str):
         """WebSocket route decorator"""
+
         def decorator(handler):
             self.websocket_handlers[path] = handler
             return handler
+
         return decorator
 
     def _route(self, path: str, methods: list):
@@ -49,6 +52,7 @@ class Router:
             for method in methods:
                 self.routes[path][method.upper()] = handler
             return handler
+
         return decorator
 
     def _match_route(self, path: str) -> tuple[Optional[str], Optional[dict]]:
@@ -64,4 +68,4 @@ class Router:
                 params = dict(zip(url_pattern.param_names, match.groups()))
                 return url_pattern.path, params
 
-        return None, None 
+        return None, None

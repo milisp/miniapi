@@ -7,18 +7,44 @@
 </head>
 <body>
     <div id="userList"></div>
+    <button id="getUser">Get User</button>
+    <h1>WebSocket Chat</h1>
+    <form action="" onsubmit="sendMessage(event)">
+        <input type="text" id="messageText" autocomplete="off" autofocus value="Hello" />
+        <button>Send</button>
+    </form>
+        <ul id='messages'>
+        </ul>
+        <script>
+            // var ws = new WebSocket("ws://localhost:8000/ws");
+            var ws = new WebSocket("ws://localhost:8000/json-chat");
+            ws.onopen = function() {
+                console.log("WebSocket is open");
+            };
+            ws.onclose = function() {
+                console.log("WebSocket is closed");
+            };
+            ws.onmessage = function(event) {
+                var messages = document.getElementById('messages')
+                var message = document.createElement('li')
+                var content = document.createTextNode(event.data)
+                message.appendChild(content)
+                messages.appendChild(message)
+            };
+            function sendMessage(event) {
+                var input = document.getElementById("messageText")
+                ws.send(input.value)
+                input.value = ''
+                event.preventDefault()
+            }
+            async function getUser() {
+                const response = await fetch('http://127.0.0.1:8000/users');
+                const data = await response.json();
+                document.getElementById('userList').textContent = JSON.stringify(data, null, 2);
+            }
+            document.getElementById('getUser').addEventListener('click', getUser);
+        </script>
 
-    <script>
-        fetch('http://127.0.0.1:8000/users')
-        .then(response => response.json())
-        .then(data => {
-            console.log('Success:', data);
-            document.getElementById('userList').textContent = JSON.stringify(data, null, 2);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            document.getElementById('userList').textContent = 'Error: ' + error.message;
-        });
-    </script>
+    
 </body>
 </html>

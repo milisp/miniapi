@@ -4,7 +4,7 @@ __author__ = ["ClaudeAI", "milisp"]
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from miniapi3 import CORSMiddleware, MiniAPI, Request, Response
+from miniapi3 import CORSMiddleware, MiniAPI, Request, Response, html
 
 app = MiniAPI()
 app.add_middleware(CORSMiddleware(allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]))
@@ -89,9 +89,20 @@ async def delete_user(user_id: int):
 
 @app.websocket("/ws")
 async def websocket_handler(ws):
+    await ws.accept()
     while True:
-        message = await ws.receive()
-        await ws.send(f"Echo: {message}")
+        data = await ws.receive_text()
+        await ws.send_text(f"Message text was: {data}")
+
+
+@app.websocket("/json-chat")
+async def json_chat_handler(ws):
+    print("start ws")
+    await ws.accept()
+    while True:
+        data = await ws.receive_text()
+        print(data)
+        await ws.send_text(f"Message text was: {data}")
 
 
 @app.get("/api")
@@ -118,6 +129,12 @@ async def get_users_by_params(request: Request):
         return {"data": result}
     finally:
         session.close()
+
+
+@app.get("/chat")
+async def chat():
+    with open("examples/index.html", "r") as f:
+        return html(f.read())
 
 
 if __name__ == "__main__":
