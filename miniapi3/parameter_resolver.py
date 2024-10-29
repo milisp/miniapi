@@ -1,7 +1,7 @@
 import inspect
 import json
 
-from .http import Request
+from .request import Request
 from .validation import ValidationError
 
 

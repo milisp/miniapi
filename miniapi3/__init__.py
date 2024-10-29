@@ -1,6 +1,7 @@
 from .core import MiniAPI
-from .http import Request, Response
 from .middleware import CORSMiddleware
+from .request import Request
+from .response import Response
 from .utils import html
 from .validation import ValidationError
 from .websocket import WebSocketConnection
@@ -11,7 +12,6 @@ __all__ = [
     "Response",
     "WebSocketConnection",
     "CORSMiddleware",
-    "RequestValidator",
     "ValidationError",
     "html",
 ]

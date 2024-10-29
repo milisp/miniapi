@@ -1,6 +1,7 @@
 # examples/main.py
 __author__ = ["ClaudeAI", "milisp"]
 
+from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
@@ -25,6 +26,11 @@ engine = create_engine("sqlite:///db.sqlite")
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
+class UserCreate(BaseModel):
+    name: str
+    age: int
+    email: str
+
 
 @app.get("/")
 async def index():
@@ -43,10 +49,9 @@ async def get_users(request: Request):
 
 
 @app.post("/users")
-async def create_user(request: Request, session=Session()):
-    data = await request.json()
+async def create_user(request: Request, user: UserCreate, session=Session()):
     try:
-        user = User(**data)
+        user = User(**user.dict())
         session.add(user)
         session.commit()
         return Response({"message": "User created"}, status=201)

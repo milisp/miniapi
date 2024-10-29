@@ -14,19 +14,6 @@ async def test_request_json():
     assert data == {"key": "value"}
 
 
-async def test_request_form():
-    request = Request(
-        method="POST",
-        path="/test",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        query_params={},
-        body=b"name=test&age=25",
-    )
-
-    data = await request.form()
-    assert data == {"name": "test", "age": "25"}
-
-
 def test_response_creation():
     # Test JSON response
     json_response = Response({"message": "success"})

@@ -3,10 +3,16 @@ import inspect
 from typing import TYPE_CHECKING, Callable
 from urllib.parse import parse_qs
 
-from .http import Request, Response
 from .parameter_resolver import ParameterResolver
+from .request import Request
+from .response import Response
 from .validation import ValidationError
 from .websocket import WebSocketConnection
+
+try:
+    from pydantic import BaseModel
+except ImportError:
+    BaseModel = None
 
 if TYPE_CHECKING:
     from .core import app
@@ -70,7 +76,7 @@ class RequestHandler:
 
                     response = await handler(**params) if inspect.iscoroutinefunction(handler) else handler(**params)
 
-                    if isinstance(response, (dict, str)):
+                    if isinstance(response, (dict, str, BaseModel)):
                         response = Response(response)
                 except ValidationError as e:
                     if app.debug:
@@ -215,7 +221,7 @@ class RequestHandler:
 
                     response = await handler(**params) if inspect.iscoroutinefunction(handler) else handler(**params)
 
-                    if isinstance(response, (dict, str)):
+                    if isinstance(response, (dict, str, BaseModel)):
                         response = Response(response)
                 except ValidationError as e:
                     if app.debug:

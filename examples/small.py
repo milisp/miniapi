@@ -14,12 +14,12 @@ class UserCreate(BaseModel):
 
 @app.post("/users")
 async def create_user(user: UserCreate):
-    return {"message": f"Created user {user.name}", "age": user.age}
+    return user
 
 
 @app.get("/users")
 async def get_user():
-    users = [UserCreate(name="user1", age=18).model_dump(), UserCreate(name="user2", age=19).model_dump()]
+    users = [UserCreate(name="user1", age=18).dict(), UserCreate(name="user2", age=19).dict()]
     return {"message": users}
 
 
