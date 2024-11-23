@@ -1,6 +1,10 @@
-# MiniAPI
+# MiniAPI3
 
 A lightweight Python web framework inspired by FastAPI, featuring async support, WebSocket capabilities, and middleware.
+
+## github repo 
+
+[miniapi3](https://github.com/milisp/miniapi) ![PyPI Downloads](https://static.pepy.tech/badge/miniapi3)
 
 ## Features
 
@@ -50,27 +54,28 @@ if __name__ == "__main__":
     app.run()
 ```
 
+## uvicorn support
+
+```bash
+uvicorn main:app
+```
 
 ## Request Validation
 
 ```python
-from dataclasses import dataclass
-
-from miniapi3.validation import RequestValidator, ValidationError
 from miniapi3 import MiniAPI, Response
+from pydantic import BaseModel
 
 app = MiniAPI()
 
-@dataclass
-class UserCreate(RequestValidator):
+class UserCreate(BaseModel):
     username: str
     email: str
     age: int
 
 @app.post("/users")
-@app.validate(UserCreate)
-async def create_user(request, data: UserCreate):
-    return {"user": data}
+async def create_user(request, user: UserCreate):
+    return dict(user)
 ```
 
 

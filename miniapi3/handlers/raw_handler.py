@@ -1,7 +1,12 @@
+"""
+Without uvicorn, only use asyncio
+"""
+
 import asyncio
 import inspect
 from urllib.parse import parse_qs
 
+from ..middleware import apply_middleware
 from ..parameter_resolver import ParameterResolver
 from ..request import Request
 from ..response import Response
@@ -60,11 +65,7 @@ class RawHandler:
             request = Request(method, path, headers, query_params, body, path_params)
             if method == "OPTIONS":
                 response = Response("", 204)
-                print("resp", response)
-                # 应用中间件
-                for middleware in app.middleware:
-                    if hasattr(middleware, "process_response"):
-                        response = middleware.process_response(response, request)
+                response = await apply_middleware(app, request, response)
 
                 # 确保 CORS 头被写入响应
                 response_bytes = "HTTP/1.1 204 No Content\r\n".encode()
@@ -101,12 +102,7 @@ class RawHandler:
             else:
                 response = Response({"error": "Not Found"}, 404)
 
-            # 应用中间件
-            for middleware in app.middleware:
-                print("mid", middleware)
-                if hasattr(middleware, "process_response"):
-                    print("resp", response)
-                    response = middleware.process_response(response, request)
+            response = await apply_middleware(app, request, response)
 
             # Format response with proper HTTP/1.1 status line and headers
             status_text = {
@@ -118,7 +114,6 @@ class RawHandler:
                 404: "Not Found",
                 500: "Internal Server Error",
             }.get(response.status, "Unknown")
-            print("status", response.status)
             response_bytes = f"HTTP/1.1 {response.status} {status_text}\r\n".encode()
 
             # Add headers
@@ -128,7 +123,8 @@ class RawHandler:
 
             # Add body
             response_bytes += response.to_bytes()
-            print("resp bye", response_bytes)
+            if app.debug:
+                print("resp bye", response_bytes)
             writer.write(response_bytes)
             await writer.drain()
 

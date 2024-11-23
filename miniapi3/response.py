@@ -34,7 +34,7 @@ class Response:
 
     def to_bytes(self) -> bytes:
         # Convert content to bytes based on type
-        print("type", type(self.content))
+        # print("type", type(self.content))
         if isinstance(self.content, bytes):
             return self.content
         elif isinstance(self.content, dict):

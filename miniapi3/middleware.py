@@ -23,8 +23,14 @@ class CORSMiddleware:
             "Authorization",
         ]
 
-    def process_response(self, response: Response, request: Request) -> Response:
+    def process_response(self, response: Response, request: Request, kwargs: dict) -> Response:
         # 设置基本的 CORS 头
+        if "allow_headers" in kwargs:
+            self.allow_headers = kwargs.get("allow_headers")
+        if "allow_origins" in kwargs:
+            self.allow_origins = kwargs.get("allow_origins")
+        if "allow_methods" in kwargs:
+            self.allow_methods = kwargs.get("allow_methods")
         headers = {
             "Access-Control-Allow-Origin": ", ".join(self.allow_origins),
             "Access-Control-Allow-Methods": ", ".join(self.allow_methods),
@@ -34,3 +40,14 @@ class CORSMiddleware:
         # 更新响应头
         response.headers.update(headers)
         return response
+
+
+async def apply_middleware(app, request, response):
+    for (
+        middleware,
+        kwargs,
+    ) in app.middleware:
+        mw = middleware()
+        if hasattr(mw, "process_response"):
+            response = mw.process_response(response, request, kwargs)
+    return response

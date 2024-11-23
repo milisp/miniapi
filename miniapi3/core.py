@@ -29,9 +29,9 @@ class MiniAPI:
     def websocket(self, path: str):
         return self.router.websocket(path)
 
-    def add_middleware(self, middleware):
+    def add_middleware(self, middleware, **kwargs):
         """添加中间件"""
-        self.middleware.append(middleware)
+        self.middleware.append((middleware, kwargs))
 
     async def _handle_websocket(self, websocket, path):
         """Handle WebSocket connections"""

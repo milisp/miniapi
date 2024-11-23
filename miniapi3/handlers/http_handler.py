@@ -1,11 +1,16 @@
+"""
+support uvicorn
+"""
+
 import inspect
 from typing import Callable
-from urllib.parse import parse_qs
 
+from ..middleware import apply_middleware
 from ..parameter_resolver import ParameterResolver
 from ..request import Request
 from ..response import Response
 from ..validation import ValidationError
+from .base_handler import BaseHandler
 
 try:
     from pydantic import BaseModel
@@ -13,20 +18,13 @@ except ImportError:
     BaseModel = None
 
 
-class HTTPHandler:
+class HTTPHandler(BaseHandler):
     @staticmethod
     async def handle(app, scope: dict, receive: Callable, send: Callable) -> None:
         # Parse path and query from scope
         path = scope["path"]
-        query_params = {}
-        raw_query = scope.get("query_string", b"").decode()
-        if raw_query:
-            query_dict = parse_qs(raw_query)
-            query_params = {
-                k: [v.decode() if isinstance(v, bytes) else v for v in vals] for k, vals in query_dict.items()
-            }
-
-        headers = {k.decode(): v.decode() for k, v in scope["headers"]}
+        query_params = BaseHandler.parse_query(scope)
+        headers = BaseHandler.parse_headers(scope)
 
         # Read body
         body = b""
@@ -43,10 +41,7 @@ class HTTPHandler:
         try:
             if scope["method"] == "OPTIONS":
                 response = Response("", 204)
-                # Apply middleware for OPTIONS request
-                for middleware in app.middleware:
-                    if hasattr(middleware, "process_response"):
-                        response = middleware.process_response(response, request)
+                response = await apply_middleware(app, request, response)
 
                 # Convert response to ASGI format with CORS headers
                 headers = [(k.encode(), v.encode()) for k, v in response.headers.items()]
@@ -85,10 +80,7 @@ class HTTPHandler:
             else:
                 response = Response({"error": "Not Found"}, 404)
 
-            # Apply middleware
-            for middleware in app.middleware:
-                if hasattr(middleware, "process_response"):
-                    response = middleware.process_response(response, request)
+            response = await apply_middleware(app, request, response)
 
             # Convert response to ASGI format
             response_bytes = response.to_bytes()
