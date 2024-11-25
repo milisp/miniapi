@@ -8,7 +8,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from miniapi3 import CORSMiddleware, MiniAPI, Request, Response, html
 
 app = MiniAPI()
-app.add_middleware(CORSMiddleware(allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]))
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 Base = declarative_base()
 

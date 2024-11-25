@@ -30,7 +30,8 @@ pip install miniapi3[websockets]
 
 ## Quick Start
 ```python
-from miniapi3 import MiniAPI, Response
+# main.py
+from miniapi3 import MiniAPI, Request
 
 app = MiniAPI()
 
@@ -39,7 +40,7 @@ async def hello():
     return {"message": "Hello, World!"}
 
 @app.get("/users/{user_id}")
-async def get_user(request):
+async def get_user(request: Request):
     user_id = request.path_params["user_id"]
     return {"user_id": user_id}
 
@@ -62,19 +63,21 @@ uvicorn main:app
 
 ## Request Validation
 
+```bash
+pip install pydantic
+```
+
 ```python
-from miniapi3 import MiniAPI, Response
+from miniapi3 import MiniAPI
 from pydantic import BaseModel
 
 app = MiniAPI()
 
 class UserCreate(BaseModel):
-    username: str
-    email: str
-    age: int
+    name: str
 
 @app.post("/users")
-async def create_user(request, user: UserCreate):
+async def create_user(user: UserCreate):
     return dict(user)
 ```
 
