@@ -8,11 +8,16 @@ from .server import Server
 from .websocket import WebSocketConnection
 
 
+def is_async_func(func):
+    return inspect.iscoroutinefunction(func)
+
+
 class MiniAPI:
     def __init__(self):
         self.router = Router()
         self.middleware = []
         self.debug = False
+        self.event_handlers = {"startup": [], "shutdown": []}
 
     def get(self, path: str):
         return self.router.get(path)
@@ -33,6 +38,16 @@ class MiniAPI:
         """添加中间件"""
         self.middleware.append((middleware, kwargs))
 
+    def on_event(self, event: str):
+        if event in self.event_handlers:
+
+            def decorator(handler):
+                self.event_handlers[event].append(handler)
+
+            return decorator
+        else:
+            raise ValueError(f"Unknown event type: {event}")
+
     async def _handle_websocket(self, websocket, path):
         """Handle WebSocket connections"""
         if path in self.router.websocket_handlers:
@@ -49,6 +64,24 @@ class MiniAPI:
             await HTTPHandler.handle(self, scope, receive, send)
         elif scope["type"] == "websocket":
             await WebSocketHandler.handle(self, scope, receive, send)
+        elif scope["type"] == "lifespan":
+            while True:
+                message = await receive()
+                if message["type"] == "lifespan.startup":
+                    for handler in self.event_handlers["startup"]:
+                        if is_async_func(handler):
+                            await handler()
+                        else:
+                            handler()
+                    await send({"type": "lifespan.startup.complete"})
+                elif message["type"] == "lifespan.shutdown":
+                    for handler in self.event_handlers["shutdown"]:
+                        if is_async_func(handler):
+                            await handler()
+                        else:
+                            handler()
+                    await send({"type": "lifespan.shutdown.complete"})
+                    break
         else:
             raise ValueError(f"Unknown scope type: {scope['type']}")
 

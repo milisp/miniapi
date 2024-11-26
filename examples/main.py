@@ -33,6 +33,16 @@ class UserCreate(BaseModel):
     email: str
 
 
+@app.on_event("startup")
+def startup_event():
+    print("app start...")
+
+
+@app.on_event("shutdown")
+def close_event():
+    print("app close...")
+
+
 @app.get("/")
 async def index():
     return "Hello World!"
