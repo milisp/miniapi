@@ -39,7 +39,5 @@ class Response:
             return self.content
         elif isinstance(self.content, dict):
             return json.dumps(self.content).encode()
-        elif isinstance(self.content, BaseModel):
-            return json.dumps(self.content.dict()).encode()
         else:
             return str(self.content).encode()

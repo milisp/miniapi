@@ -1,7 +1,12 @@
-from miniapi3 import CORSMiddleware, MiniAPI, Request
+from miniapi3 import MiniAPI, Request
 
 app = MiniAPI()
-app.add_middleware(CORSMiddleware(allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]))
+app.debug = True
+
+
+@app.get("/h")
+async def h():
+    return "hi"
 
 
 @app.get("/users")

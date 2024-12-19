@@ -1,6 +1,6 @@
 [project]
 name = "miniapi3"
-version = "0.1.6"
+version = "0.1.7"
 description = "miniapi like fastapi"
 authors = [
     {name = "milisp", email = "milisp@proton.me"},
@@ -26,3 +26,8 @@ dev = [
 
 [tool.ruff]
 line-length = 120
+
+[dependency-groups]
+dev = [
+    "pydantic>=2.10.4",
+]

@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from miniapi3 import CORSMiddleware, MiniAPI
 
 app = MiniAPI()
-app.add_middleware(CORSMiddleware(allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]))
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.debug = True  # Add this line
 
 
@@ -14,12 +14,12 @@ class UserCreate(BaseModel):
 
 @app.post("/users")
 async def create_user(user: UserCreate):
-    return user
+    return user.model_dump()
 
 
 @app.get("/users")
 async def get_user():
-    users = [UserCreate(name="user1", age=18).dict(), UserCreate(name="user2", age=19).dict()]
+    users = [UserCreate(name="user1", age=18).model_dump(), UserCreate(name="user2", age=19).model_dump()]
     return {"message": users}
 
 
